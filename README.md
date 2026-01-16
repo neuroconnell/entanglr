@@ -11,15 +11,25 @@
 - Cell embeddings (PCA, UMAP, tSNE coordinates) with zero numerical loss
 - PCA feature loadings (zero-padded to all genes)
 - Reduction keys (PC_, UMAP_, tSNE_)
+- **Support for multiple reductions** (e.g., `pca`, `integrated.pca`, `umap`, `integrated.umap`)
 
 **Neighbor graphs:**
-- Graph structure and edge weights
-- Multiple graphs (SNN, KNN)
-- Note: Graph names are standardized (e.g., integrated_snn → RNA_snn)
+- Graph structure and edge weights with zero numerical loss
+- Multiple graphs (SNN, KNN) from different assays
+- **Graph names preserved** (e.g., `integrated_snn` remains `integrated_snn`)
 
 **Variable features:**
-- Set of highly variable genes
-- Note: Selection scores and rankings are not preserved
+- Highly variable genes
+- **Gene order preserved** via ranking system
+- Automatically extracted from PCA loadings if not explicitly stored
+
+## Key Features
+
+**Dynamic metadata reading** - Not limited to hardcoded reduction/graph names  
+
+**Multi-assay support** - Preserves both RNA and integrated assay reductions  
+
+**Zero data loss** - Values are preserved with no loss
 
 -------
 
@@ -68,6 +78,7 @@ seurat_obj <- readH5AD(
 names(seurat_obj@reductions)
 names(seurat_obj@graphs)
 ```
+
 
 
 
