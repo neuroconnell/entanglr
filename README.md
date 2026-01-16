@@ -1,5 +1,5 @@
 # entanglr
-#### Bidirectional conversion between Seurat and AnnData (H5AD) formats with preservation of dimensionality reductions, neighbor graphs, and metadata. Built using  [basilisk](https://bioconductor.org/packages/release/bioc/html/basilisk.html).
+#### R package for bidirectional conversion between Seurat and AnnData (H5AD) data formats while preservin dimensionality reductions, neighbor graphs, and metadata. Built using  [basilisk](https://bioconductor.org/packages/release/bioc/html/basilisk.html).
 
 ## Overview
 
@@ -36,7 +36,9 @@ writeH5AD(
   verbose = TRUE
   )
 ```
-## Read H5AD and create Seurat object
+-----
+# entanglr enables direct conversion of H5AD files into a Seurat object.
+## Read H5AD file and create Seurat object
 ```
 seurat_obj <- readH5AD(
   file = "input.h5ad",
@@ -49,3 +51,4 @@ seurat_obj <- readH5AD(
 names(seurat_obj@reductions)
 names(seurat_obj@graphs)
 ```
+
