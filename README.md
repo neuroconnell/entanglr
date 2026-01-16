@@ -49,7 +49,7 @@ library(Seurat)
 seurat_obj <- readRDS("data.rds")
 ```
 
-## Converting Seurat object to H5AD
+## Convert Seurat object to H5AD
 Note: First use triggers automatic Python environment setup (~ 5 minutes). Writing of all subsequent H5AD files is immediate.
 
 ```
@@ -65,7 +65,7 @@ writeH5AD(
   verbose = TRUE
   )
 ```
-## Reading H5AD file to create a Seurat object
+## Read H5AD file to create a Seurat object
 ```
 seurat_obj <- readH5AD(
   file = "input.h5ad",
@@ -78,6 +78,7 @@ seurat_obj <- readH5AD(
 names(seurat_obj@reductions)
 names(seurat_obj@graphs)
 ```
+
 
 
 
