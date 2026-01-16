@@ -1,0 +1,23 @@
+Package: entanglr
+Title: Convert Between Seurat and AnnData H5AD Formats
+Version: 0.1.0
+Authors@R: person("Christopher", "O'Connell", email = "neuroconnell@gmail.com", role = c("aut", "cre"))
+Description: Provides seamless conversion between Seurat objects and AnnData 
+    H5AD format for interoperability between R and Python single-cell analysis 
+    workflows.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports:
+    Seurat,
+    SeuratObject,
+    Matrix,
+    hdf5r,
+    basilisk,
+    reticulate,
+    methods
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+StagedInstall: no

@@ -1,0 +1,11 @@
+.Rproj.user
+.Rhistory
+.RData
+*.h5ad
+*.rds
+.DS_Store
+*_cache/
+*.tar.gz
+.Rdata
+.httr-oauth
+.quarto
