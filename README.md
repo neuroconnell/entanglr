@@ -5,7 +5,7 @@
 
 **entanglr** directly converts Seurat objects to AnnData H5AD format and vice versa. It preserves computed dimensional reductions (PCA, UMAP, t-SNE), neighbor graphs, PCA loadings, and variable feature annotations.
 
-### What additional data does entanglr maintain?
+### What additional data does entanglr manage during object conversion?
 
 **Dimensional reductions:**
 - Cell embeddings (PCA, UMAP, tSNE coordinates) with zero numerical loss
@@ -78,6 +78,7 @@ seurat_obj <- readH5AD(
 names(seurat_obj@reductions)
 names(seurat_obj@graphs)
 ```
+
 
 
 
