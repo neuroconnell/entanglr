@@ -67,9 +67,22 @@ writeH5AD <- function(seurat_object, file, assay = "RNA",
     if (var_features) {
       tryCatch({
         var_genes <- Seurat::VariableFeatures(seurat_object, assay = assay)
+
+        # If no variable features but PCA exists, extract from PCA loadings
+        if (length(var_genes) == 0 && "pca" %in% names(seurat_object@reductions)) {
+          pca_loadings <- seurat_object@reductions$pca@feature.loadings
+          if (!is.null(pca_loadings) && nrow(pca_loadings) > 0) {
+            var_genes <- rownames(pca_loadings)
+            if (verbose) message(sprintf("Extracted %d variable features from PCA loadings", length(var_genes)))
+          }
+        }
+
         if (length(var_genes) > 0) {
           var$highly_variable <- rownames(var) %in% var_genes
-          if (verbose) message(sprintf("Marked %d variable features", sum(var$highly_variable)))
+          # Save the order of variable features
+          var$highly_variable_rank <- NA
+          var$highly_variable_rank[match(var_genes, rownames(var))] <- seq_along(var_genes)
+          if (verbose) message(sprintf("Marked %d variable features with order", sum(var$highly_variable)))
         }
       }, error = function(e) {
         if (verbose) message("Could not mark variable features")
@@ -194,17 +207,9 @@ writeH5AD <- function(seurat_object, file, assay = "RNA",
           graph_py <- reticulate::r_to_py(as.matrix(graph_t))
           graph_sparse <- scipy_sparse$csr_matrix(graph_py)
 
-          # Map to standard names
-          if (grepl("snn", graph_name, ignore.case = TRUE)) {
-            obsp_list[["connectivities"]] <- graph_sparse
-            if (verbose) message("  - Prepared SNN graph")
-          } else if (grepl("nn", graph_name, ignore.case = TRUE)) {
-            obsp_list[["distances"]] <- graph_sparse
-            if (verbose) message("  - Prepared NN graph")
-          } else {
-            obsp_list[[graph_name]] <- graph_sparse
-            if (verbose) message(sprintf("  - Prepared %s", graph_name))
-          }
+          # Keep original graph names to preserve information
+          obsp_list[[graph_name]] <- graph_sparse
+          if (verbose) message(sprintf("  - Prepared %s graph", graph_name))
 
         }, error = function(e) {
           if (verbose) warning(sprintf("Could not prepare graph %s: %s",

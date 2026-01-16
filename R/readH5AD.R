@@ -22,6 +22,7 @@ readH5AD <- function(file, assay = "RNA", verbose = TRUE) {
 
   .h5ad_to_list <- function(file) {
     anndata <- reticulate::import("anndata")
+    py <- reticulate::import_builtins()
 
     adata <- anndata$read_h5ad(file)
 
@@ -41,50 +42,50 @@ readH5AD <- function(file, assay = "RNA", verbose = TRUE) {
       result$raw <- as.matrix(adata$raw$X)
     }
 
-    # Get dimensional reductions from obsm
+    # Get ALL dimensional reductions from obsm (not just hardcoded ones)
     tryCatch({
-      pca_data <- adata$obsm[["X_pca"]]
-      if (!is.null(pca_data)) {
-        result$obsm[["X_pca"]] <- as.matrix(pca_data)
+      obsm_keys <- py$list(adata$obsm$keys())
+      if (length(obsm_keys) > 0) {
+        for (obsm_key in obsm_keys) {
+          obsm_data <- adata$obsm[[obsm_key]]
+          if (!is.null(obsm_data)) {
+            result$obsm[[obsm_key]] <- as.matrix(obsm_data)
+          }
+        }
       }
-    }, error = function(e) {})
+    }, error = function(e) {
+      if (verbose) warning("Could not read obsm: ", e$message)
+    })
 
+    # Get ALL loadings from varm (not just PCs)
     tryCatch({
-      umap_data <- adata$obsm[["X_umap"]]
-      if (!is.null(umap_data)) {
-        result$obsm[["X_umap"]] <- as.matrix(umap_data)
+      varm_keys <- py$list(adata$varm$keys())
+      if (length(varm_keys) > 0) {
+        for (varm_key in varm_keys) {
+          varm_data <- adata$varm[[varm_key]]
+          if (!is.null(varm_data)) {
+            result$varm[[varm_key]] <- as.matrix(varm_data)
+          }
+        }
       }
-    }, error = function(e) {})
+    }, error = function(e) {
+      if (verbose) warning("Could not read varm: ", e$message)
+    })
 
+    # Get ALL graphs from obsp (not just hardcoded ones)
     tryCatch({
-      tsne_data <- adata$obsm[["X_tsne"]]
-      if (!is.null(tsne_data)) {
-        result$obsm[["X_tsne"]] <- as.matrix(tsne_data)
+      obsp_keys <- py$list(adata$obsp$keys())
+      if (length(obsp_keys) > 0) {
+        for (obsp_key in obsp_keys) {
+          obsp_data <- adata$obsp[[obsp_key]]
+          if (!is.null(obsp_data)) {
+            result$obsp[[obsp_key]] <- as.matrix(obsp_data)
+          }
+        }
       }
-    }, error = function(e) {})
-
-    # Get loadings from varm (e.g., PCA loadings)
-    tryCatch({
-      pcs <- adata$varm[["PCs"]]
-      if (!is.null(pcs)) {
-        result$varm[["PCs"]] <- as.matrix(pcs)
-      }
-    }, error = function(e) {})
-
-    # Get graphs from obsp
-    tryCatch({
-      conn <- adata$obsp[["connectivities"]]
-      if (!is.null(conn)) {
-        result$obsp[["connectivities"]] <- as.matrix(conn)
-      }
-    }, error = function(e) {})
-
-    tryCatch({
-      dist <- adata$obsp[["distances"]]
-      if (!is.null(dist)) {
-        result$obsp[["distances"]] <- as.matrix(dist)
-      }
-    }, error = function(e) {})
+    }, error = function(e) {
+      if (verbose) warning("Could not read obsp: ", e$message)
+    })
 
     # Get additional layers
     tryCatch({
@@ -163,7 +164,7 @@ readH5AD <- function(file, assay = "RNA", verbose = TRUE) {
       tryCatch({
         embeddings <- adata_list$obsm[[obsm_key]]
 
-        # Map back to Seurat names
+        # Map back to Seurat names (remove X_ prefix)
         reduction_name <- gsub("^X_", "", obsm_key)
 
         # Set rownames to match cells
@@ -176,23 +177,67 @@ readH5AD <- function(file, assay = "RNA", verbose = TRUE) {
                       "pca" = "PC_",
                       "umap" = "UMAP_",
                       "tsne" = "tSNE_",
+                      "integrated.pca" = "integratedPC_",
+                      "integrated.umap" = "integratedUMAP_",
+                      "integrated.tsne" = "integratedtSNE_",
                       paste0(toupper(substr(reduction_name, 1, 1)),
                              substr(reduction_name, 2, nchar(reduction_name)), "_"))
 
         # Set column names to match original format
         colnames(embeddings) <- paste0(key, 1:ncol(embeddings))
 
-        # Get or create loadings if available
+        # Get or create loadings if available (for PCA reductions)
         loadings <- NULL
-        if (reduction_name == "pca" && "PCs" %in% names(adata_list$varm)) {
-          loadings <- adata_list$varm[["PCs"]]
-          # Ensure rownames match genes
-          if (nrow(seurat_obj) >= nrow(loadings)) {
-            matching_genes <- intersect(rownames(seurat_obj), rownames(loadings))
-            if (length(matching_genes) > 0) {
-              loadings <- loadings[matching_genes, , drop = FALSE]
-              # Set column names for loadings
-              colnames(loadings) <- paste0(key, 1:ncol(loadings))
+        if (grepl("pca$", reduction_name, ignore.case = TRUE)) {
+          # Look for matching loadings in varm
+          loading_key <- if (reduction_name == "pca") "PCs" else paste0(reduction_name, "_loadings")
+
+          if ("PCs" %in% names(adata_list$varm)) {
+            loadings <- adata_list$varm[["PCs"]]
+          } else if (loading_key %in% names(adata_list$varm)) {
+            loadings <- adata_list$varm[[loading_key]]
+          }
+
+          if (!is.null(loadings)) {
+            # Set rownames from var if missing
+            if (is.null(rownames(loadings)) && nrow(loadings) == nrow(adata_list$var)) {
+              rownames(loadings) <- rownames(adata_list$var)
+            }
+
+            # Ensure rownames match genes
+            if (nrow(seurat_obj) >= nrow(loadings)) {
+              matching_genes <- intersect(rownames(seurat_obj), rownames(loadings))
+              if (length(matching_genes) > 0) {
+                loadings <- loadings[matching_genes, , drop = FALSE]
+
+                # Remove zero-padded rows (genes not used in original PCA)
+                non_zero_genes <- rowSums(abs(loadings)) > 0
+                if (any(non_zero_genes)) {
+                  loadings <- loadings[non_zero_genes, , drop = FALSE]
+                  if (verbose) message(sprintf("    Filtered to %d non-zero loading genes", nrow(loadings)))
+
+                  # Reorder loadings using highly_variable_rank if available
+                  if ("highly_variable_rank" %in% colnames(adata_list$var) &&
+                      "highly_variable" %in% colnames(adata_list$var)) {
+                    # Filter to only highly variable genes first
+                    var_with_rank <- adata_list$var[adata_list$var$highly_variable == TRUE, , drop = FALSE]
+                    if (nrow(var_with_rank) > 0 && "highly_variable_rank" %in% colnames(var_with_rank)) {
+                      var_with_rank <- var_with_rank[order(var_with_rank$highly_variable_rank), , drop = FALSE]
+                      var_genes_ordered <- rownames(var_with_rank)
+
+                      # Keep only genes that are in loadings
+                      genes_to_keep <- intersect(var_genes_ordered, rownames(loadings))
+                      if (length(genes_to_keep) > 0 && length(genes_to_keep) == nrow(loadings)) {
+                        loadings <- loadings[genes_to_keep, , drop = FALSE]
+                        if (verbose) message(sprintf("    Reordered loadings to match variable features"))
+                      }
+                    }
+                  }
+                }
+
+                # Set column names for loadings
+                colnames(loadings) <- paste0(key, 1:ncol(loadings))
+              }
             }
           }
         }
@@ -239,14 +284,15 @@ readH5AD <- function(file, assay = "RNA", verbose = TRUE) {
         }
 
         # Map back to Seurat naming
+        # If it's a standard name, map it; otherwise keep original
         graph_name <- switch(obsp_key,
                              "connectivities" = paste0(assay, "_snn"),
                              "distances" = paste0(assay, "_nn"),
-                             obsp_key)
+                             obsp_key)  # Keep original name if not standard
 
         seurat_obj@graphs[[graph_name]] <- graph
 
-        if (verbose) message(sprintf("  - Restored %s graph", obsp_key))
+        if (verbose) message(sprintf("  - Restored %s graph", graph_name))
 
       }, error = function(e) {
         if (verbose) warning(sprintf("Could not restore graph %s: %s", obsp_key, e$message))
@@ -254,10 +300,23 @@ readH5AD <- function(file, assay = "RNA", verbose = TRUE) {
     }
   }
 
-  # Restore variable features
+  # Restore variable features (using rank if available)
   if ("highly_variable" %in% colnames(adata_list$var)) {
     tryCatch({
-      var_genes <- rownames(adata_list$var)[adata_list$var$highly_variable]
+      if ("highly_variable_rank" %in% colnames(adata_list$var)) {
+        # Filter to only highly variable genes first (avoids sentinel values)
+        var_with_rank <- adata_list$var[adata_list$var$highly_variable == TRUE, , drop = FALSE]
+        if (nrow(var_with_rank) > 0 && "highly_variable_rank" %in% colnames(var_with_rank)) {
+          var_with_rank <- var_with_rank[order(var_with_rank$highly_variable_rank), , drop = FALSE]
+          var_genes <- rownames(var_with_rank)
+        } else {
+          var_genes <- rownames(adata_list$var)[adata_list$var$highly_variable]
+        }
+      } else {
+        # Fallback to unordered
+        var_genes <- rownames(adata_list$var)[adata_list$var$highly_variable]
+      }
+
       if (length(var_genes) > 0) {
         Seurat::VariableFeatures(seurat_obj, assay = assay) <- var_genes
         if (verbose) message(sprintf("Restored %d variable features", length(var_genes)))
