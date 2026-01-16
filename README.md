@@ -5,6 +5,29 @@
 
 entanglr directly converts Seurat single-cell objects to AnnData H5AD format and vice versa. It preserves computed dimensional reductions (PCA, UMAP, t-SNE), neighbor graphs, PCA loadings, and variable feature annotations.
 
+
+### What data are maintened 
+
+**Dimensional reductions:**
+- Cell embeddings (PCA, UMAP, tSNE coordinates) with zero numerical loss
+- PCA feature loadings (zero-padded to all genes)
+- Reduction keys (PC_, UMAP_, tSNE_)
+
+**Neighbor graphs:**
+- Graph structure and edge weights
+- Multiple graphs (SNN, KNN)
+- Note: Graph names are standardized (e.g., integrated_snn → RNA_snn)
+
+**Variable features:**
+- Set of highly variable genes
+- Note: Selection scores and rankings are not preserved
+
+**What is NOT preserved:**
+- Reduction-specific metadata (standard deviation, jackstraw results)
+- Variable feature method scores (vst.mean, vst.variance)
+- Original custom graph names
+-------
+
 ## Installation
 entanglr can be installed from GitHub
 ```
@@ -22,7 +45,7 @@ library(Seurat)
 seurat_obj <- readRDS("data.rds")
 ```
 
-## Convert to H5AD
+## Converting Seurat object to H5AD
 ```
 writeH5AD(
   seurat_object = seurat_obj,
@@ -36,9 +59,7 @@ writeH5AD(
   verbose = TRUE
   )
 ```
------
-# entanglr enables direct conversion of H5AD files into a Seurat object
-## Read H5AD file and create Seurat object
+## Reading H5AD file and creating a Seurat object
 ```
 seurat_obj <- readH5AD(
   file = "input.h5ad",
@@ -51,6 +72,7 @@ seurat_obj <- readH5AD(
 names(seurat_obj@reductions)
 names(seurat_obj@graphs)
 ```
+
 
 
 
