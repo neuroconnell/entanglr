@@ -3,10 +3,9 @@
 
 ## Overview
 
-entanglr directly converts Seurat single-cell objects to AnnData H5AD format and vice versa. It preserves computed dimensional reductions (PCA, UMAP, t-SNE), neighbor graphs, PCA loadings, and variable feature annotations.
+**entanglr** directly converts Seurat objects to AnnData H5AD format and vice versa. It preserves computed dimensional reductions (PCA, UMAP, t-SNE), neighbor graphs, PCA loadings, and variable feature annotations.
 
-
-### What data are maintened 
+### What additional data does entanglr maintain?
 
 **Dimensional reductions:**
 - Cell embeddings (PCA, UMAP, tSNE coordinates) with zero numerical loss
@@ -22,10 +21,6 @@ entanglr directly converts Seurat single-cell objects to AnnData H5AD format and
 - Set of highly variable genes
 - Note: Selection scores and rankings are not preserved
 
-**What is NOT preserved:**
-- Reduction-specific metadata (standard deviation, jackstraw results)
-- Variable feature method scores (vst.mean, vst.variance)
-- Original custom graph names
 -------
 
 ## Installation
@@ -73,6 +68,7 @@ seurat_obj <- readH5AD(
 names(seurat_obj@reductions)
 names(seurat_obj@graphs)
 ```
+
 
 
 
