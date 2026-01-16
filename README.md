@@ -37,7 +37,7 @@ writeH5AD(
   )
 ```
 -----
-# entanglr enables direct conversion of H5AD files into a Seurat object.
+# entanglr enables direct conversion of H5AD files into a Seurat object
 ## Read H5AD file and create Seurat object
 ```
 seurat_obj <- readH5AD(
@@ -51,4 +51,5 @@ seurat_obj <- readH5AD(
 names(seurat_obj@reductions)
 names(seurat_obj@graphs)
 ```
+
 
