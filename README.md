@@ -73,11 +73,12 @@ seurat_obj <- readH5AD(
   verbose = TRUE
   )
 ```
-## Dimensional reductions and graphs are automatically restored
+## Dimensional reductions and graphs are stored
 ```
 names(seurat_obj@reductions)
 names(seurat_obj@graphs)
 ```
+
 
 
 
