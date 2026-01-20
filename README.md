@@ -29,7 +29,7 @@
 
 **Multi-assay support** - Preserves both RNA and integrated assay reductions  
 
-**Zero data loss** - Values are preserved with no loss
+**Zero data loss** - Values are preserved with zero dropout or rounding
 
 -------
 
@@ -78,6 +78,7 @@ seurat_obj <- readH5AD(
 names(seurat_obj@reductions)
 names(seurat_obj@graphs)
 ```
+
 
 
 
